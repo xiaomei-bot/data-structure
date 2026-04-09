@@ -10,16 +10,17 @@ void quickSort(int a[], int left, int right)
 	{
 		while (i < j && a[j] >= pivot)
 		{
-			a[i] = a[j];
 			j--;
 		}
+		a[i] = a[j];
 		while (i < j && a[i] <= pivot)
 		{
-			a[j] = a[i];
 			i++;
 		}
+		a[j] = a[i];
 	}
 	a[i] = pivot;
 	quickSort(a, left, i - 1);
 	quickSort(a, i + 1, right);
 }
+
