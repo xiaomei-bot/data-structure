@@ -1,0 +1,116 @@
+//线段树	以最大值为例
+#include<iostream>
+#include<vector>
+#include<climits>
+#include<algorithm>
+using namespace std;
+struct node
+{
+	int data, lazy = 0;		//data（区间最大值），lazy（懒标记）
+};
+
+//建树
+void build(const vector<int>& a, vector<node>& tree, int rt, int left, int right)		//a为输入的数组，rt为当前根节点，l，r为范围
+{
+	if (left == right)
+	{
+		tree[rt].data = a[left];		//叶子节点，递归结束，建树完成
+		return;
+	}
+	int mid = left + (right - left) / 2;
+	build(a, tree, 2 * rt, left, mid);		//构建左子树
+	build(a, tree, 2 * rt + 1, mid + 1, right);		//构建右子树
+	tree[rt].data = max(tree[2 * rt].data, tree[2 * rt + 1].data);		//更新当前节点的值
+}
+
+//懒标记下放
+void pushdown(vector<node>& tree, int rt)
+{
+	if (tree[rt].lazy != 0)
+	{
+		tree[2 * rt].data += tree[rt].lazy;
+		tree[2 * rt].lazy+= tree[rt].lazy;		//更新左子树的值和懒标记
+		tree[2 * rt+1].data += tree[rt].lazy;
+		tree[2 * rt+1].lazy += tree[rt].lazy;		//更新右子树的值和懒标记
+		tree[rt].lazy = 0;
+	}
+}
+
+//区间查询
+int query(vector<node>& tree, int rt, int left, int right, int ql, int qr)		//查询ql~qr的最大值
+{
+	if (ql > right || qr < left)
+	{
+		return INT_MIN;		//区间无交集，返回最小值
+	}
+	if (ql <= left && qr >= right)
+	{
+		return tree[rt].data;		//当前区间完全包含在查询区间内
+	}
+	int mid = left + (right - left) / 2;
+	pushdown(tree, rt);		//处理懒标记
+	int leftmax = query(tree, 2 * rt, left, mid, ql, qr);		//递归查询左子树
+	int rightmax = query(tree, 2 * rt+1, mid+1, right, ql, qr);		//递归查询右子树
+	return max(leftmax, rightmax);
+}
+
+//单点更新
+void update(vector<node>& tree, int rt, int left, int right, int idx, int val)		//把下标为idx位置的值改为val
+{
+	if (left == right)
+	{
+		tree[rt].data = val;
+		tree[rt].lazy = 0;		//找到目标所在的叶子节点，更新值
+		return;
+	}
+	int mid = left + (right - left) / 2;
+	pushdown(tree, rt);
+	if (idx <= mid)
+	{
+		update(tree, 2 * rt, left, mid, idx, val);		//递归更新左子树
+	}	
+	else
+	{
+		update(tree, 2 * rt + 1, mid + 1, right, idx, val);		//递归更新右子树
+	}
+	tree[rt].data = max(tree[2 * rt].data, tree[2 * rt + 1].data);
+}
+
+//区间更新
+void updaterange(vector<node>& tree, int rt, int left, int right, int ul, int ur, int val)		//ul~ur的值加val
+{
+	if (ul > right || ur < left)
+	{
+		return;		//区间无交集
+	}
+	if (ul <= left && ur >= right)		//区间完全包含
+	{
+		tree[rt].data += val;		//更新当前节点值
+		tree[rt].lazy += val;		//更新懒标记
+		return;
+	}
+	int mid = left + (right - left) / 2;
+	pushdown(tree, rt);
+	updaterange(tree, 2 * rt, left, mid, ul, ur,val);		//递归更新左子树
+	updaterange(tree, 2 * rt+1, mid+1,	right, ul, ur,val);		//递归更新右子树
+	tree[rt].data = max(tree[2 * rt].data, tree[2 * rt + 1].data);		//更新当前节点的值
+}
+
+int main()
+{
+	int n;
+	cin >> n;
+	vector<int>a(n+1);
+	for (int i = 1; i <= n; i++)cin >> a[i];
+	vector<node>tree(4 * (n + 1));
+	build(a, tree, 1, 1, n);
+	int l, r,idx,x;
+	cin >> idx >> x;
+	update(tree, 1, 1, n, idx, x);
+	cin >> l >> r;
+	updaterange(tree, 1, 1, n, l, r, x);
+	int ll, rr;
+	cin >> ll >> rr;
+	cout << query(tree, 1, 1, n, ll, rr) << endl;
+	return 0;
+}
